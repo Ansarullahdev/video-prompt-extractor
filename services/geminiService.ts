@@ -8,45 +8,50 @@ const responseSchema = {
   properties: {
     mainPrompt: {
       type: Type.STRING,
-      description: "The primary text prompt that would generate this video. Include subject, action, camera movement, lens type, and setting.",
+      description: "A comprehensive generative AI prompt to replicate this video perfectly.",
     },
     negativePrompt: {
       type: Type.STRING,
-      description: "Elements to exclude (e.g., 'blurry, low res, glitchy, morphing').",
+      description: "Negative constraints to prevent artifacts or unwanted styles.",
     },
     artStyle: {
       type: Type.STRING,
-      description: "The artistic style (e.g., 'Hyper-realistic', '3D Unreal Engine 5', 'Oil Painting', 'Cine-Kodak 16mm').",
+      description: "The visual style, medium, and renderer (e.g., Octane Render, 35mm Film).",
     },
     cameraAngles: {
       type: Type.STRING,
-      description: "Specific camera movement and lens info (e.g., '70mm anamorphic, tracking shot, low angle').",
+      description: "Camera movement, focal length, and perspective details.",
     },
     lightingAndAtmosphere: {
       type: Type.STRING,
-      description: "Lighting and mood (e.g., 'Volumetric lighting, noir, dramatic shadows').",
+      description: "Lighting setup, time of day, and weather conditions.",
     },
     subjectDescription: {
       type: Type.STRING,
-      description: "Detailed description of subjects and their specific physics/motion.",
+      description: "Detailed breakdown of the subjects, their actions, and textures.",
     }
   },
   required: ["mainPrompt", "negativePrompt", "artStyle", "cameraAngles", "lightingAndAtmosphere", "subjectDescription"],
 };
 
 export const analyzeVideo = async (file: File, onStatusUpdate?: (status: string) => void): Promise<PromptAnalysis> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const apiKey = process.env.API_KEY;
+  
+  if (!apiKey) {
+    throw new Error("API_KEY environment variable is missing. Please add it to your project settings.");
+  }
+
+  const ai = new GoogleGenAI({ apiKey });
   const modelId = "gemini-3-flash-preview";
 
   try {
-    if (onStatusUpdate) onStatusUpdate("Extracting keyframes...");
+    if (onStatusUpdate) onStatusUpdate("Extracting frames...");
     
-    // Extract frames locally to keep latency low
     const frames = await extractFramesFromVideo(file, (progress) => {
-      if (onStatusUpdate) onStatusUpdate(`Extracting keyframes (${Math.round(progress)}%)...`);
+      if (onStatusUpdate) onStatusUpdate(`Analyzing frames (${Math.round(progress)}%)...`);
     });
 
-    if (onStatusUpdate) onStatusUpdate("Consulting Gemini Vision...");
+    if (onStatusUpdate) onStatusUpdate("Reverse engineering prompt...");
 
     const imageParts = frames.map(frameData => ({
       inlineData: {
@@ -61,12 +66,11 @@ export const analyzeVideo = async (file: File, onStatusUpdate?: (status: string)
         parts: [
           ...imageParts,
           {
-            text: `You are an elite AI Video Prompt Engineer. 
-            Analyze this sequence of ${frames.length} keyframes from a video.
-            
-            1. Reverse-engineer the EXACT prompt used to generate this (if it was AI) or the prompt needed to REPLICATE this (if it's real footage).
-            2. Focus on: Cinematic lighting, specific lens types, motion vectors (how fast things move), and textures.
-            3. Return the result in the requested JSON format.`
+            text: `Act as a world-class AI Video Prompt Engineer.
+            I am providing a sequence of frames from a video. 
+            Analyze the temporal consistency, lighting, camera movement, and artistic style.
+            Generate a full, highly-detailed prompt that could be used in high-end video models like Sora, Runway, or Luma to recreate this exact aesthetic and motion.
+            Return the analysis in the provided JSON schema.`
           }
         ]
       },
@@ -77,19 +81,15 @@ export const analyzeVideo = async (file: File, onStatusUpdate?: (status: string)
     });
 
     const text = response.text;
-    if (!text) {
-      throw new Error("No response from AI. Content might have been blocked.");
-    }
+    if (!text) throw new Error("Analysis failed to generate a response.");
 
     return JSON.parse(text) as PromptAnalysis;
 
   } catch (error: any) {
-    console.error("Gemini Analysis Error:", error);
-    
-    if (error.message?.includes("401")) {
-      throw new Error("API configuration error. Please ensure your project environment is correctly set up.");
+    console.error("Gemini Error:", error);
+    if (error.message?.includes("API Key")) {
+      throw new Error("The API key is invalid or not correctly configured in the environment.");
     }
-    
-    throw new Error(error.message || "An error occurred during video analysis.");
+    throw new Error(error.message || "An unexpected error occurred during analysis.");
   }
 };
