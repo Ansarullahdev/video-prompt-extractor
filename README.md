@@ -1,20 +1,26 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Video Prompt Extractor
 
-# Run and deploy your AI Studio app
+Video Prompt Extractor is a tool designed to analyze video content and extract meaningful, reusable AI prompts. It helps creators, developers, and researchers turn video ideas into structured prompts for AI models and creative workflows.
 
-This contains everything you need to run your app locally.
+## 🚀 Features
+- Extracts useful prompts from video content
+- Helps reuse video ideas for AI generation
+- Simple and easy-to-use workflow
+- Suitable for content creators and developers
+- Open-source and customizable
 
-View your app in AI Studio: https://ai.studio/apps/drive/1XOA47NwzcDfziI05_lqd1elRlCHSkNB5
+## 🧠 Use Cases
+- Generate AI prompts from tutorials or talks
+- Reuse video ideas for text or image generation
+- Speed up content creation workflows
+- Research and experimentation with AI prompts
 
-## Run Locally
+## 🛠️ Tech Stack
+- Python / JavaScript (adjust if needed)
+- Video processing tools
+- AI / NLP-based prompt generation
 
-**Prerequisites:**  Node.js
-
-
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## 📦 Installation
+```bash
+git clone https://github.com/your-username/video-prompt-extractor.git
+cd video-prompt-extractor
