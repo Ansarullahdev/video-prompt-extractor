@@ -35,7 +35,8 @@ const responseSchema = {
 };
 
 export const analyzeVideo = async (file: File, onStatusUpdate?: (status: string) => void): Promise<PromptAnalysis> => {
-  // Use the pre-configured API key from the environment
+  // Use the pre-configured API key from the environment.
+  // In Vercel, this must be set in the Project Settings -> Environment Variables.
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const modelId = "gemini-3-flash-preview";
 
@@ -43,10 +44,10 @@ export const analyzeVideo = async (file: File, onStatusUpdate?: (status: string)
     if (onStatusUpdate) onStatusUpdate("Extracting frames...");
     
     const frames = await extractFramesFromVideo(file, (progress) => {
-      if (onStatusUpdate) onStatusUpdate(`Analyzing frames (${Math.round(progress)}%)...`);
+      if (onStatusUpdate) onStatusUpdate(`Sampling frames (${Math.round(progress)}%)...`);
     });
 
-    if (onStatusUpdate) onStatusUpdate("Reverse engineering prompt...");
+    if (onStatusUpdate) onStatusUpdate("Synthesizing prompt...");
 
     const imageParts = frames.map(frameData => ({
       inlineData: {
@@ -61,9 +62,9 @@ export const analyzeVideo = async (file: File, onStatusUpdate?: (status: string)
         parts: [
           ...imageParts,
           {
-            text: `Act as a world-class AI Video Prompt Engineer.
-            Analyze this sequence of frames. 
-            Generate a full, highly-detailed prompt that could be used in high-end video models to recreate this exact aesthetic and motion.
+            text: `Act as a world-class AI Video Prompt Engineer. 
+            Analyze the provided visual frames and generate a comprehensive reverse-engineered prompt.
+            The prompt should capture motion, lighting, style, and camera work perfectly.
             Return the analysis in the provided JSON schema.`
           }
         ]
@@ -75,12 +76,13 @@ export const analyzeVideo = async (file: File, onStatusUpdate?: (status: string)
     });
 
     const text = response.text;
-    if (!text) throw new Error("Analysis failed to generate a response.");
+    if (!text) throw new Error("Empty response from AI engine.");
 
     return JSON.parse(text) as PromptAnalysis;
 
   } catch (error: any) {
     console.error("Gemini Error:", error);
-    throw new Error(error.message || "An unexpected error occurred during analysis.");
+    // Generic error handling to avoid exposing API key details if they are missing
+    throw new Error(error.message || "Failed to analyze video. Please try again.");
   }
 };

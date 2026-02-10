@@ -59,12 +59,17 @@ function App() {
       setAnalysisResult(result);
       setProcessingState({ status: 'complete' });
     } catch (error: any) {
-      setProcessingState({ status: 'error', message: error.message });
+      console.error("Analysis Failed:", error);
+      setProcessingState({ 
+        status: 'error', 
+        message: error.message || "An unexpected error occurred. Please check your connection."
+      });
     }
   };
 
   return (
     <div className="min-h-screen bg-[#020617] text-slate-100 selection:bg-blue-500/30">
+      {/* Background Decor */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none opacity-20">
         <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-600 blur-[120px] rounded-full"></div>
         <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-indigo-800 blur-[120px] rounded-full"></div>
@@ -83,9 +88,9 @@ function App() {
               <p className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em]">Vision Analysis Suite</p>
             </div>
           </div>
-          <div className="flex items-center space-x-2 text-[10px] font-black uppercase tracking-widest text-blue-400 bg-blue-500/10 px-4 py-2 rounded-full border border-blue-500/20">
+          <div className="hidden sm:flex items-center space-x-2 text-[10px] font-black uppercase tracking-widest text-blue-400 bg-blue-500/10 px-4 py-2 rounded-full border border-blue-500/20">
              <Sparkles size={12} className="animate-pulse" />
-             <span>Gemini 3 Powered</span>
+             <span>Active Intelligence</span>
           </div>
         </div>
       </header>
@@ -132,7 +137,7 @@ function App() {
                   <div className="absolute inset-[-30px] bg-blue-500/10 blur-3xl animate-pulse rounded-full"></div>
                   <Loader2 size={64} className="text-blue-500 animate-spin relative z-10" />
                 </div>
-                <h3 className="text-xl font-black text-white uppercase tracking-widest">{loadingMessage}</h3>
+                <h3 className="text-xl font-black text-white uppercase tracking-widest text-center">{loadingMessage}</h3>
                 <div className="mt-8 w-48 h-1 bg-slate-800 rounded-full overflow-hidden">
                   <div className="h-full bg-blue-500 animate-[loading_1.5s_infinite]"></div>
                 </div>
@@ -145,13 +150,15 @@ function App() {
                   <AlertTriangle size={40} />
                 </div>
                 <h3 className="text-2xl font-bold text-red-100 mb-2">System Interruption</h3>
-                <p className="text-red-200/60 max-w-sm mb-8 font-medium">{processingState.message}</p>
+                <p className="text-red-200/60 max-w-sm mb-8 font-medium">
+                  {processingState.message}
+                </p>
                 <button 
                   onClick={handleClear}
-                  className="flex items-center space-x-2 px-8 py-3 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold transition-all shadow-xl shadow-red-600/20"
+                  className="mt-8 flex items-center space-x-2 px-8 py-3 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold transition-all shadow-xl shadow-red-600/20"
                 >
                   <RotateCcw size={18} />
-                  <span>Restart Module</span>
+                  <span>Restart Session</span>
                 </button>
               </div>
             )}
