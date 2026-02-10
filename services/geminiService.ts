@@ -1,59 +1,53 @@
-import { GoogleGenAI, Type, Schema } from "@google/genai";
+
+import { GoogleGenAI, Type } from "@google/genai";
 import { PromptAnalysis } from "../types";
 import { extractFramesFromVideo } from "./videoUtils";
 
-const responseSchema: Schema = {
+const responseSchema = {
   type: Type.OBJECT,
   properties: {
     mainPrompt: {
       type: Type.STRING,
-      description: "The primary text prompt that would generate this video. Be extremely descriptive, covering subject, action, camera movement, and setting in full detail.",
+      description: "The primary text prompt that would generate this video. Include subject, action, camera movement, lens type, and setting.",
     },
     negativePrompt: {
       type: Type.STRING,
-      description: "Elements to exclude to maintain quality (e.g., 'blurry, distorted, low quality, text, watermark').",
+      description: "Elements to exclude (e.g., 'blurry, low res, glitchy, morphing').",
     },
     artStyle: {
       type: Type.STRING,
-      description: "The artistic style (e.g., 'Photorealistic', '3D Animation', 'Cinematic', 'Anime').",
+      description: "The artistic style (e.g., 'Hyper-realistic', '3D Unreal Engine 5', 'Oil Painting', 'Cine-Kodak 16mm').",
     },
     cameraAngles: {
       type: Type.STRING,
-      description: "Description of camera movement inferred from the frame sequence (e.g., 'Drone shot', 'Close up', 'Tracking shot', 'FPV').",
+      description: "Specific camera movement and lens info (e.g., '70mm anamorphic, tracking shot, low angle').",
     },
     lightingAndAtmosphere: {
       type: Type.STRING,
-      description: "Description of lighting conditions and mood (e.g., 'Golden hour', 'Cyberpunk neon', 'Natural lighting').",
+      description: "Lighting and mood (e.g., 'Volumetric lighting, noir, dramatic shadows').",
     },
     subjectDescription: {
       type: Type.STRING,
-      description: "Detailed description of the main subject(s) and their specific actions across the frames.",
+      description: "Detailed description of subjects and their specific physics/motion.",
     }
   },
   required: ["mainPrompt", "negativePrompt", "artStyle", "cameraAngles", "lightingAndAtmosphere", "subjectDescription"],
 };
 
 export const analyzeVideo = async (file: File, onStatusUpdate?: (status: string) => void): Promise<PromptAnalysis> => {
-  if (!process.env.API_KEY) {
-    throw new Error("API Key is missing. Please check your environment configuration.");
-  }
-
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  const modelId = "gemini-2.5-flash";
+  const modelId = "gemini-3-flash-preview";
 
   try {
-    // Phase 1: Client-Side Processing (Fast)
     if (onStatusUpdate) onStatusUpdate("Extracting keyframes...");
     
-    // Instead of uploading the whole video, we extract 10 keyframes.
-    // This reduces payload from ~500MB to ~2MB and removes server processing wait time.
+    // Extract frames locally to keep latency low
     const frames = await extractFramesFromVideo(file, (progress) => {
       if (onStatusUpdate) onStatusUpdate(`Extracting keyframes (${Math.round(progress)}%)...`);
     });
 
-    if (onStatusUpdate) onStatusUpdate("Analyzing visual sequence...");
+    if (onStatusUpdate) onStatusUpdate("Consulting Gemini Vision...");
 
-    // Create image parts for Gemini
     const imageParts = frames.map(frameData => ({
       inlineData: {
         data: frameData,
@@ -61,59 +55,41 @@ export const analyzeVideo = async (file: File, onStatusUpdate?: (status: string)
       }
     }));
 
-    // Phase 2: Inference
     const response = await ai.models.generateContent({
       model: modelId,
       contents: {
         parts: [
           ...imageParts,
           {
-            text: `You are an expert AI Video Prompt Engineer. 
+            text: `You are an elite AI Video Prompt Engineer. 
+            Analyze this sequence of ${frames.length} keyframes from a video.
             
-            I have provided a sequence of ${frames.length} keyframes extracted from a continuous video at equal intervals.
-            
-            Analyze these frames to reverse-engineer the EXACT prompt used to generate this video.
-            
-            1. **Infer Motion**: Look at the changes between frames to determine subject action and camera movement (e.g., if the background shifts left, it's a truck right or pan right).
-            2. **Detail**: Describe the subject, lighting, textures, and style in extreme detail.
-            3. **Completeness**: Do not miss any visual element.
-            
-            Return the result strictly as a valid JSON object matching the schema.`
+            1. Reverse-engineer the EXACT prompt used to generate this (if it was AI) or the prompt needed to REPLICATE this (if it's real footage).
+            2. Focus on: Cinematic lighting, specific lens types, motion vectors (how fast things move), and textures.
+            3. Return the result in the requested JSON format.`
           }
         ]
       },
       config: {
         responseMimeType: "application/json",
         responseSchema: responseSchema,
-        temperature: 0.2,
       }
     });
 
     const text = response.text;
     if (!text) {
-      throw new Error("Gemini returned an empty response. The content might have triggered safety filters.");
+      throw new Error("No response from AI. Content might have been blocked.");
     }
 
-    const cleanedText = text.replace(/```json\s*|\s*```/g, "").trim();
-
-    try {
-      return JSON.parse(cleanedText) as PromptAnalysis;
-    } catch (parseError) {
-      console.error("JSON Parse failed:", parseError);
-      throw new Error("Failed to process the AI response. Please try again.");
-    }
+    return JSON.parse(text) as PromptAnalysis;
 
   } catch (error: any) {
-    console.error("Error calling Gemini API:", error);
+    console.error("Gemini Analysis Error:", error);
     
-    const msg = (error.message || "").toLowerCase();
+    if (error.message?.includes("401")) {
+      throw new Error("API configuration error. Please ensure your project environment is correctly set up.");
+    }
     
-    if (msg.includes("400")) throw new Error("The video frames could not be processed.");
-    if (msg.includes("401") || msg.includes("unauthenticated")) throw new Error("Invalid API Key. Please check your settings.");
-    if (msg.includes("413")) throw new Error("File payload too large. Try a shorter video.");
-    if (msg.includes("429")) throw new Error("Too many requests. Please wait a moment.");
-    if (msg.includes("safety")) throw new Error("The video content was blocked by safety settings.");
-    
-    throw error;
+    throw new Error(error.message || "An error occurred during video analysis.");
   }
 };
