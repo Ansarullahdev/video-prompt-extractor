@@ -1,0 +1,5 @@
+{
+  "name": "Vid2Prompt - Reverse Engineer Video Prompts",
+  "description": "Upload any video clip to reverse-engineer the exact AI prompt used to create it, or to describe real-world footage for generation tools.",
+  "requestFramePermissions": []
+}
