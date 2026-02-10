@@ -35,13 +35,8 @@ const responseSchema = {
 };
 
 export const analyzeVideo = async (file: File, onStatusUpdate?: (status: string) => void): Promise<PromptAnalysis> => {
-  const apiKey = process.env.API_KEY;
-  
-  if (!apiKey) {
-    throw new Error("API_KEY environment variable is missing. Please add it to your project settings.");
-  }
-
-  const ai = new GoogleGenAI({ apiKey });
+  // Use the pre-configured API key from the environment
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const modelId = "gemini-3-flash-preview";
 
   try {
@@ -67,9 +62,8 @@ export const analyzeVideo = async (file: File, onStatusUpdate?: (status: string)
           ...imageParts,
           {
             text: `Act as a world-class AI Video Prompt Engineer.
-            I am providing a sequence of frames from a video. 
-            Analyze the temporal consistency, lighting, camera movement, and artistic style.
-            Generate a full, highly-detailed prompt that could be used in high-end video models like Sora, Runway, or Luma to recreate this exact aesthetic and motion.
+            Analyze this sequence of frames. 
+            Generate a full, highly-detailed prompt that could be used in high-end video models to recreate this exact aesthetic and motion.
             Return the analysis in the provided JSON schema.`
           }
         ]
@@ -87,9 +81,6 @@ export const analyzeVideo = async (file: File, onStatusUpdate?: (status: string)
 
   } catch (error: any) {
     console.error("Gemini Error:", error);
-    if (error.message?.includes("API Key")) {
-      throw new Error("The API key is invalid or not correctly configured in the environment.");
-    }
     throw new Error(error.message || "An unexpected error occurred during analysis.");
   }
 };

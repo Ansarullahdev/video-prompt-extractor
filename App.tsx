@@ -4,7 +4,7 @@ import { VideoUploader } from './components/VideoUploader';
 import { AnalysisResult } from './components/AnalysisResult';
 import { VideoMetadata, PromptAnalysis, ProcessingState } from './types';
 import { analyzeVideo } from './services/geminiService';
-import { Wand2, Loader2, Sparkles, AlertTriangle, Layers, Film, RotateCcw } from 'lucide-react';
+import { Wand2, Loader2, Sparkles, AlertTriangle, Film, RotateCcw } from 'lucide-react';
 
 function App() {
   const [currentFile, setCurrentFile] = useState<VideoMetadata | null>(null);
@@ -73,7 +73,7 @@ function App() {
       <header className="border-b border-slate-800/60 bg-slate-950/50 backdrop-blur-xl sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-2.5 rounded-2xl">
+            <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-2.5 rounded-2xl shadow-lg shadow-blue-500/20">
               <Film size={24} className="text-white" />
             </div>
             <div>
@@ -85,7 +85,7 @@ function App() {
           </div>
           <div className="flex items-center space-x-2 text-[10px] font-black uppercase tracking-widest text-blue-400 bg-blue-500/10 px-4 py-2 rounded-full border border-blue-500/20">
              <Sparkles size={12} className="animate-pulse" />
-             <span>Gemini 3 Pro</span>
+             <span>Gemini 3 Powered</span>
           </div>
         </div>
       </header>
